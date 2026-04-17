@@ -70,12 +70,18 @@ object GraphLoader:
   private def generateSynthetic(config: SimConfig): EnrichedGraph =
     val rng = Random(config.seed)
     val nodes = Vector.tabulate(config.nodeCount)(id => SimNode(id, s"n$id"))
-    val edges =
+    val randomEdges =
       nodes.flatMap { fromNode =>
         nodes.collect {
           case toNode if fromNode.id != toNode.id && rng.nextDouble() <= config.edgeProbability =>
             SimEdge(fromNode.id, toNode.id, Set.empty)
         }
       }
+    // Ring election sends along logical successors 0→1→…→n-1→0; those must exist as graph edges or no leader is ever elected.
+    val ringOverlay =
+      if config.nodeCount >= 2 && (config.algorithmName == "ring-election" || config.algorithmName == "both") then
+        Vector.tabulate(config.nodeCount)(i => SimEdge(i, (i + 1) % config.nodeCount, Set.empty))
+      else Vector.empty
+    val edges = (randomEdges ++ ringOverlay).distinctBy(e => (e.from, e.to))
     logger.info("Generated synthetic graph with {} nodes and {} edges", Int.box(nodes.size), Int.box(edges.size))
     EnrichedGraph(nodes = nodes, edges = edges, nodePdfs = Map.empty)

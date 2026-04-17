@@ -70,6 +70,8 @@ These are **illustrative sizes**, not a single fixed “100-node” default. You
 
 **Timers** periodically drive PDF-sampled traffic; **inputs** accept injections where listed (see each file’s `initiators` block).
 
+For **`ring-election`** and **`both`** on **synthetic** graphs, the loader **adds a directed cycle** `0→1→…→n-1→0` on top of the random edges. The election algorithm forwards along that logical ring using real `ActorRef` channels; without those edges, a sparse random graph often **never** completes an election, so you would see no **“became leader”** lines in the log.
+
 ---
 
 ## Command-line flags (main ones)
