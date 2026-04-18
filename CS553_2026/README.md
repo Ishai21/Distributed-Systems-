@@ -8,6 +8,8 @@ Course project: load a **NetGameSim-exported** topology (DOT), **enrich** it wit
 
 Design notes: **`docs/report.md`**.
 
+Demo Video: **`https://youtu.be/8sw7UrfD-RA`**
+
 ---
 
 ## Prerequisites
