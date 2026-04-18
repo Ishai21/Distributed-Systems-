@@ -80,14 +80,7 @@ sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --run 30s 
 
 Use the **`simCli`** project id (not **`sim-cli`**). Run from the directory that contains **`build.sbt`** so **`conf/`** and **`graph/…`** paths resolve.
 
-**Algorithm variants** (same **`NetGraph.conf`**, separate output dirs):
-
-```bash
-mkdir -p outputs/netgraph-ring-election outputs/netgraph-rollback outputs/netgraph-both
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm ring-election --run 30s --out outputs/netgraph-ring-election"
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm rollback --run 30s --out outputs/netgraph-rollback"
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm both --run 30s --out outputs/netgraph-both"
-```
+For **three separate run commands** (ring election, rollback, both), see **`README.md`** in this directory → **“Three separate commands”**.
 
 Alternatively **`./scripts/reproduce.sh`** from **`CS553_2026`** runs compile, test, and one **`NetGraph.conf`** run into **`outputs/NetGraph/`** (including **`run.log`**).
 

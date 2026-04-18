@@ -6,7 +6,7 @@ Course project: load a **NetGameSim-exported** topology (DOT), **enrich** it wit
 
 **Logs on disk:** if you pass **`--out <dir>`**, the CLI writes **`run.log`** in that directory (same content as console SLF4J), so you can find the leader with `grep -i leader <dir>/run.log`.
 
-Design notes and rubric context: **`docs/report.md`**.
+Design notes: **`docs/report.md`**.
 
 ---
 
@@ -102,6 +102,40 @@ Unknown arguments cause **`simMain`** to fail fast with an error.
 
 ---
 
+## Three separate commands
+
+Each block is self-contained (includes **`cd CS553_2026`**). With **`--out`**, you get **`run.log`**, **`graph.json`**, **`summary.json`**, and **`metrics.json`**.
+
+**Ring leader election only**
+
+```bash
+cd CS553_2026
+mkdir -p outputs/run-ring-election
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm ring-election --run 30s --out outputs/run-ring-election"
+```
+
+Optional: **`grep -i leader outputs/run-ring-election/run.log`**
+
+**Rollback only**
+
+```bash
+cd CS553_2026
+mkdir -p outputs/run-rollback
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm rollback --run 30s --out outputs/run-rollback"
+```
+
+**Both algorithms (ring election + rollback)**
+
+```bash
+cd CS553_2026
+mkdir -p outputs/run-both
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm both --run 30s --out outputs/run-both"
+```
+
+Optional: **`grep -i leader outputs/run-both/run.log`**
+
+---
+
 ## Commands
 
 ### Build and unit tests
@@ -112,24 +146,16 @@ sbt compile
 sbt test
 ```
 
-### Default NetGraph run (`both`, artifacts + `run.log`)
+### Default NetGraph run (`both` from config file, artifacts + `run.log`)
 
 ```bash
+cd CS553_2026
 mkdir -p outputs/NetGraph
 sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --run 30s --out outputs/NetGraph"
 grep -i leader outputs/NetGraph/run.log
 ```
 
-### One output directory per algorithm (same topology)
-
-```bash
-mkdir -p outputs/netgraph-ring-election outputs/netgraph-rollback outputs/netgraph-both
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm ring-election --run 30s --out outputs/netgraph-ring-election"
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm rollback --run 30s --out outputs/netgraph-rollback"
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm both --run 30s --out outputs/netgraph-both"
-```
-
-### Reproduce script (CI / grader style)
+### Reproduce script
 
 From **`CS553_2026`**:
 
@@ -181,9 +207,9 @@ The **`outputs/`** tree is listed in **`.gitignore`**; regenerate locally as nee
 
 ---
 
-## Grading and reproducibility
+## Reproducibility
 
-- Dependencies resolve from **Maven Central** only (no private Akka / Cinnamon Maven credentials). In-process metrics use **`MetricsCollector`** and logs; see **`docs/report.md`** for the Cinnamon trade-off if the rubric mentions it.
+- Dependencies resolve from **Maven Central** only (no private Akka / Cinnamon Maven credentials). Metrics use **`MetricsCollector`** and logs; see **`docs/report.md`** for the Cinnamon trade-off.
 - **`Compile / run`** for **`simCli`** forks with working directory **`CS553_2026`**, so relative **`conf/`** and **`graph/`** paths match README examples.
 
 ### Minimal smoke (compile + test + short sim)
@@ -191,8 +217,8 @@ The **`outputs/`** tree is listed in **`.gitignore`**; regenerate locally as nee
 ```bash
 cd CS553_2026
 sbt compile && sbt test
-mkdir -p outputs/grader-smoke
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --run 10s --out outputs/grader-smoke"
+mkdir -p outputs/smoke
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --run 10s --out outputs/smoke"
 ```
 
-Artifacts (including **`run.log`**) appear under **`outputs/grader-smoke/`**.
+Artifacts (including **`run.log`**) appear under **`outputs/smoke/`**.
