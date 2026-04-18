@@ -3,6 +3,7 @@ package edu.uic.cs553
 import edu.uic.cs553.api.DistributedAlgorithm
 import edu.uic.cs553.config.SimConfig
 import edu.uic.cs553.election.ProbAnonymousRingElection
+import edu.uic.cs553.logging.RunLog
 import edu.uic.cs553.graph.{GraphEnricher, GraphLoader}
 import edu.uic.cs553.graph.GraphWriter
 import edu.uic.cs553.metrics.MetricsCollector
@@ -27,6 +28,11 @@ private final case class CliOptions(
 
 @main def simMain(args: String*): Unit =
   val options = parseArgs(args.toList, CliOptions())
+  options.outDir.foreach { dir =>
+    val out = Path.of(dir)
+    Files.createDirectories(out)
+    RunLog.install(out.resolve("run.log"))
+  }
   val loaded = SimConfig.load(options.configPath)
   val config =
     loaded.copy(
@@ -42,7 +48,6 @@ private final case class CliOptions(
   val injections = options.injectFile.map(readInjectionFile).getOrElse(Nil)
   val outPath = options.outDir.map(Path.of(_))
   outPath.foreach { dir =>
-    Files.createDirectories(dir)
     Files.writeString(dir.resolve("graph.json"), GraphWriter.toJson(enrichedGraph))
   }
 

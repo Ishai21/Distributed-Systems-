@@ -6,10 +6,7 @@ echo "== compile =="
 sbt compile
 echo "== test =="
 sbt test
-echo "== experiment 1 (ring election, synthetic) =="
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/experiment1.conf --run 10s --out outputs/reproduce-exp1"
-echo "== experiment 2 =="
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/experiment2.conf --run 10s --out outputs/reproduce-exp2"
-echo "== experiment 3 =="
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/experiment3.conf --run 10s --out outputs/reproduce-exp3"
-echo "Done. Artifacts under outputs/reproduce-*/"
+echo "== NetGraph (NetGameSim DOT -> outputs/NetGraph, includes run.log) =="
+mkdir -p outputs/NetGraph
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --run 25s --out outputs/NetGraph"
+echo "Done. Artifacts under outputs/NetGraph/ (see run.log)."

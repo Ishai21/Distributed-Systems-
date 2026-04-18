@@ -1,5 +1,7 @@
 # CS553 Distributed Systems Simulation Report
 
+Runnable commands, CLI flags, and troubleshooting: **`README.md`** in the **`CS553_2026/`** directory (this folder’s parent). The repo root **`readme.md`** / **`README.md`** only point here.
+
 ## 1. Architecture Overview
 
 ```text
@@ -40,11 +42,11 @@ The runtime enforces edge labels before dispatching algorithm payloads. Messages
 
 ## 4. Probabilistic Anonymous Ring Election
 
-The ring election algorithm constructs an explicit ring from the sorted node list in `SimMain`, regardless of the loaded graph structure. Each node generates a seeded random election value and forwards election messages around the ring. Lower-valued messages are discarded, larger values are forwarded, and ties trigger a new round with a fresh random value.
+The ring election algorithm constructs an explicit ring from the sorted node list in `SimMain`, regardless of the loaded graph structure. `GraphLoader` adds matching **directed ring edges** (sorted id order) whenever `algorithmName` is `ring-election` or `both`, for **both** synthetic graphs and **file-loaded** NetGameSim DOT graphs, so `CONTROL` election traffic has real `ActorRef` channels. Each node generates a seeded random election value and forwards election messages around the ring. Lower-valued messages are discarded, larger values are forwarded, and ties trigger a new round with a fresh random value.
 
 Correctness intuition: because the ring is finite and each node compares the same candidate value against its own local value, only a value that is not dominated by any node can traverse the entire ring. When that value returns after `nodeCount` hops, the owner announces leadership. A `LeaderMsg` is forwarded once per leader value to prevent infinite circulation.
 
-Experiment result summary: in the small ring experiment, the algorithm consistently elects a single leader and produces a visible control-message wave in logs. Under the shared seed, the chosen leader is deterministic for each run.
+Experiment result summary: on the NetGraph topology with the ring overlay, the algorithm elects a single leader and produces a visible control-message wave in logs. Under the shared seed, the chosen leader is deterministic for each run.
 
 ## 5. Peterson-Kearns Rollback Recovery
 
@@ -52,21 +54,19 @@ Each node maintains checkpoint, send, and receive logs. Every processed message 
 
 Consistency argument: rollback keeps only log entries at or before the selected checkpoint sequence. This removes sends and receives that happened after the checkpoint boundary and prevents orphaned post-checkpoint state from surviving the rollback. Once acknowledgements return to the initiator, the runtime logs that a consistent global state has been restored.
 
-Experiment result summary: the dense-graph rollback experiment produces multiple checkpoints quickly, triggers a rollback from timer nodes, and confirms recovery with `RollbackAck` messages and summary logs.
+Experiment result summary: with `--algorithm rollback` (or `both`), timer nodes drive checkpoints and rollback completes with `RollbackAck` and summary logs.
 
 ## 6. Experiment Configurations
 
-| config | nodeCount | density | algorithm | result |
-| --- | --- | --- | --- | --- |
-| `experiment1.conf` | 8 | sparse (`0.25`) | ring election | single leader elected |
-| `experiment2.conf` | 15 | dense (`0.6`) | rollback recovery | rollback initiated and acknowledged |
-| `experiment3.conf` | 25 | medium (`0.5`) | both | background traffic plus both control algorithms |
+| config | topology | algorithm | result |
+| --- | --- | --- | --- |
+| `NetGraph.conf` | NetGameSim DOT (101 nodes) | `both` by default; override with `--algorithm` | leader lines in `run.log` when election runs; rollback + traffic |
 
 ## 7. Instrumentation and metrics (no private repositories)
 
 This submission **does not** use Lightbend Cinnamon so that **`sbt compile` / `sbt test` succeed on any machine with only Maven Central**—no Akka Account or tokenized `akka.sbt` file. The rubric allows a small deduction for missing Cinnamon JVM/agent instrumentation; that is an explicit trade-off so grading never fails on credential or private-artifact resolution.
 
-Observable behavior uses **`MetricsCollector`**: counts for messages sent and received (per node at shutdown and aggregate), per message kind, and optional `metrics.json` when `--out` is set. **SLF4J** records run lifecycle, node initialization, algorithm milestones, and warnings (for example dropped edge violations).
+Observable behavior uses **`MetricsCollector`**: counts for messages sent and received (per node at shutdown and aggregate), per message kind, and optional `metrics.json` when `--out` is set. **SLF4J** records run lifecycle, node initialization, algorithm milestones, and warnings (for example dropped edge violations). With **`--out`**, the CLI also attaches a **`run.log`** file appender so the same lines (including **“became leader”** / **“Leader elected”**) are available under that directory without scraping the console.
 
 ## 8. How To Reproduce Experiments
 
@@ -74,15 +74,22 @@ Observable behavior uses **`MetricsCollector`**: counts for messages sent and re
 cd CS553_2026
 sbt compile
 sbt test
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/experiment1.conf"
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/experiment2.conf"
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/experiment3.conf"
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/sim.conf --graph ../NetGameSim/NetGraph_14-04-26-16-41-08.ngs.dot --algorithm both --run 30s"
+mkdir -p outputs/NetGraph
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --run 30s --out outputs/NetGraph"
 ```
 
-Use the `simCli` project id (not `sim-cli`). Run commands from the directory that contains `build.sbt` so `conf/` paths resolve.
+Use the **`simCli`** project id (not **`sim-cli`**). Run from the directory that contains **`build.sbt`** so **`conf/`** and **`../NetGameSim/...`** resolve.
 
-Alternatively run `./scripts/reproduce.sh` from `CS553_2026` to compile, test, and write outputs under `outputs/reproduce-*`.
+**Algorithm variants** (same **`NetGraph.conf`**, separate output dirs):
+
+```bash
+mkdir -p outputs/netgraph-ring-election outputs/netgraph-rollback outputs/netgraph-both
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm ring-election --run 30s --out outputs/netgraph-ring-election"
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm rollback --run 30s --out outputs/netgraph-rollback"
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --algorithm both --run 30s --out outputs/netgraph-both"
+```
+
+Alternatively **`./scripts/reproduce.sh`** from **`CS553_2026`** runs compile, test, and one **`NetGraph.conf`** run into **`outputs/NetGraph/`** (including **`run.log`**).
 
 ## 9. Known Limitations and Future Work
 
