@@ -60,7 +60,7 @@ Experiment result summary: with `--algorithm rollback` (or `both`), timer nodes 
 
 | config | topology | algorithm | result |
 | --- | --- | --- | --- |
-| `NetGraph.conf` | NetGameSim DOT (101 nodes) | `both` by default; override with `--algorithm` | leader lines in `run.log` when election runs; rollback + traffic |
+| `NetGraph.conf` | NetGameSim-style DOT, **`graph/NetGraph_14-04-26-16-41-08.ngs.dot`** (101 nodes) | `both` by default; override with `--algorithm` | leader lines in `run.log` when election runs; rollback + traffic |
 
 ## 7. Instrumentation and metrics (no private repositories)
 
@@ -78,7 +78,7 @@ mkdir -p outputs/NetGraph
 sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --run 30s --out outputs/NetGraph"
 ```
 
-Use the **`simCli`** project id (not **`sim-cli`**). Run from the directory that contains **`build.sbt`** so **`conf/`** and **`../NetGameSim/...`** resolve.
+Use the **`simCli`** project id (not **`sim-cli`**). Run from the directory that contains **`build.sbt`** so **`conf/`** and **`graph/…`** paths resolve.
 
 **Algorithm variants** (same **`NetGraph.conf`**, separate output dirs):
 

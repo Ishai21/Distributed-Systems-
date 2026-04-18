@@ -1,0 +1,5 @@
+# IDE / local tooling at repo root (e.g. opening SBT from wrong directory)
+.idea/
+.bsp/
+target/
+project/

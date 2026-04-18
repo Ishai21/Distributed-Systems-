@@ -2,7 +2,7 @@
 
 Course project: load a **NetGameSim-exported** topology (DOT), **enrich** it with Typesafe Config (allowed message kinds per edge, per-node traffic PDFs), run an **Akka Classic** simulation (**one actor per node**, **one logical channel per directed edge**), and collect **SLF4J logs**, **`MetricsCollector`** counters, and optional **JSON artifacts**.
 
-**Single config:** `conf/NetGraph.conf` points at `../NetGameSim/NetGraph_14-04-26-16-41-08.ngs.dot` (101 nodes). Algorithms are selected in that file or overridden on the CLI (`ring-election`, `rollback`, `both`).
+**Single config:** `conf/NetGraph.conf` points at **`graph/NetGraph_14-04-26-16-41-08.ngs.dot`** (101 nodes, tracked in-repo). Algorithms are selected in that file or overridden on the CLI (`ring-election`, `rollback`, `both`).
 
 **Logs on disk:** if you pass **`--out <dir>`**, the CLI writes **`run.log`** in that directory (same content as console SLF4J), so you can find the leader with `grep -i leader <dir>/run.log`.
 
@@ -18,7 +18,7 @@ Design notes and rubric context: **`docs/report.md`**.
 | **SBT** | 1.9.x |
 | **Scala** | Resolved by SBT (**Scala 3.3.x**) |
 
-**Working directory:** run SBT and the CLI from **`CS553_2026/`** (the directory that contains **`build.sbt`**). Forked `runMain` uses that folder as the JVM working directory so **`conf/NetGraph.conf`** and **`../NetGameSim/...`** resolve correctly.
+**Working directory:** run SBT and the CLI from **`CS553_2026/`** (the directory that contains **`build.sbt`**). Forked `runMain` uses that folder as the JVM working directory so **`conf/`**, **`graph/…`**, and **`--graph`** paths resolve relative to **`CS553_2026/`**.
 
 ---
 
@@ -34,7 +34,8 @@ Design notes and rubric context: **`docs/report.md`**.
 | **`sim-cli/`** | Entry point **`edu.uic.cs553.simMain`**, **`RunLog`** (file appender for `--out`) |
 | **`docs/report.md`** | Architecture, design decisions, reproduction, limitations |
 | **`scripts/reproduce.sh`** | `sbt compile`, `sbt test`, one NetGraph run → **`outputs/NetGraph/`** |
-| **`../NetGameSim/`** (repo root) | NetGameSim assets; **`.ngs`** is native there; this sim reads **`.ngs.dot`** (or `.json`) |
+| **`graph/`** | Versioned **`.dot`** export used by **`NetGraph.conf`** (clone-friendly) |
+| **`../NetGameSim/`** (repo root) | Upstream NetGameSim **SBT** project; generates **`.ngs`**; regenerate exports there if you change the graph |
 
 **SBT selector:** use **`simCli`** (camelCase). **`sim-cli`** is not a valid project id.
 
@@ -71,7 +72,7 @@ Default in **`NetGraph.conf`**: **`both`**. Override without editing the file:
 
 | Key area | Purpose |
 |----------|---------|
-| **`sim.graphFilePath`** | Relative DOT path: **`../NetGameSim/NetGraph_14-04-26-16-41-08.ngs.dot`** |
+| **`sim.graphFilePath`** | Default: **`graph/NetGraph_14-04-26-16-41-08.ngs.dot`** (under **`CS553_2026/`**) |
 | **`sim.syntheticGraph`** | **`false`** for file-backed topology |
 | **`sim.algorithmName`** | Default **`both`**; CLI **`--algorithm`** overrides |
 | **`sim.seed`**, **`sim.runDurationSeconds`** | Reproducibility and wall-clock sim length; CLI **`--run 30s`** overrides duration |
@@ -92,7 +93,7 @@ To use a **synthetic** graph instead, copy **`NetGraph.conf`** to a new file, se
 | **`--config`** | **`--config conf/NetGraph.conf`** | HOCON file (required for normal runs) |
 | **`--run`** | **`--run 30s`** or **`--run 45`** | Override **`runDurationSeconds`** (`s` suffix optional) |
 | **`--algorithm`** | **`--algorithm rollback`** | Override **`algorithmName`** |
-| **`--graph`** | **`--graph ../NetGameSim/other.ngs.dot`** | Topology file; forces **`syntheticGraph`** off for that run |
+| **`--graph`** | **`--graph graph/other.dot`** | Topology file; forces **`syntheticGraph`** off for that run |
 | **`--out`** | **`--out outputs/NetGraph`** | Writes **`graph.json`**, **`summary.json`**, **`metrics.json`**, **`run.log`** |
 | **`--inject`** | **`--inject injections.txt`** | Lines: **`<delayMs> <nodeId> <kind> <payload>`** |
 | **`--interactive`** | | stdin injections while the sim runs |
@@ -141,7 +142,7 @@ This runs **`compile`**, **`test`**, then **`NetGraph.conf`** for 25s into **`ou
 ### Optional: explicit graph path (same file as in config)
 
 ```bash
-sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --graph ../NetGameSim/NetGraph_14-04-26-16-41-08.ngs.dot --algorithm both --run 30s --out outputs/NetGraph"
+sbt "simCli/runMain edu.uic.cs553.simMain --config conf/NetGraph.conf --graph graph/NetGraph_14-04-26-16-41-08.ngs.dot --algorithm both --run 30s --out outputs/NetGraph"
 ```
 
 ### Injections
@@ -173,7 +174,7 @@ The **`outputs/`** tree is listed in **`.gitignore`**; regenerate locally as nee
 
 | Issue | What to check |
 |-------|----------------|
-| **`Graph file does not exist`** | Run from **`CS553_2026`**; confirm **`../NetGameSim/NetGraph_14-04-26-16-41-08.ngs.dot`** exists |
+| **`Graph file does not exist`** | Run from **`CS553_2026`**; confirm **`graph/NetGraph_14-04-26-16-41-08.ngs.dot`** exists (or fix **`graphFilePath`** / **`--graph`**) |
 | **`No nodes found in DOT file`** | Use a **`.dot`** (or **`.json`**) export; raw **`.ngs`** is not read by **`GraphLoader`** |
 | **No leader lines in `run.log`** | Use **`ring-election`** or **`both`**; ring overlay is applied automatically for those modes on loaded graphs |
 | **SBT “project not found”** | Selector must be **`simCli`**, not **`sim-cli`** |
@@ -183,7 +184,7 @@ The **`outputs/`** tree is listed in **`.gitignore`**; regenerate locally as nee
 ## Grading and reproducibility
 
 - Dependencies resolve from **Maven Central** only (no private Akka / Cinnamon Maven credentials). In-process metrics use **`MetricsCollector`** and logs; see **`docs/report.md`** for the Cinnamon trade-off if the rubric mentions it.
-- **`Compile / run`** for **`simCli`** forks with working directory **`CS553_2026`**, so relative **`conf/`** and **`../NetGameSim/`** paths match README examples.
+- **`Compile / run`** for **`simCli`** forks with working directory **`CS553_2026`**, so relative **`conf/`** and **`graph/`** paths match README examples.
 
 ### Minimal smoke (compile + test + short sim)
 
